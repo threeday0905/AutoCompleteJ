@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>AutoComplete J - Demo</title>
+    <meta name="description" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="stylesheet" href="../dest/autoCompleteJ.css" />
+  </head>
+
+  <body>
+    <h1>AutoComplete J - Demo</h1>
+    <form>
+      <fieldset>
+        <legend>Select Your Destination</legend>
+        <input type="text" id="fromCity" name="fromCity" placeholder="Form:" />
+        <span>*HTML5 Mode</span>
+        <br/>
+        <input type="text" id="transitCity" name="transitCity" placeholder="Transit:" />
+        <span>*Legacy Mode - Match Start</span>
+        <br/>
+        <input type="text" id="toCity" name="toCity" placeholder="To:" />
+        <span>*Legacy Mode - Match AnyWhere</span>
+        <br/>
+        <br/>
+        <span>*enter matched cities to un-lock the submit button</span>
+        <input id="btnSubmit" type="submit" value="Submit" disabled />
+      </fieldset>
+
+    </form>
+
+    <script src="./vendor/require.js"></script>
+    <script>
+      /* 1. since the same-origin policy, so wrap the pure json source into an AMD module. */
+      /* 2. also use AMD to load the main lib. the lib is also support CMD, or export to global object. */
+      require(
+
+        ['./source/timezone', '../dest/autoCompleteJ' ],
+
+        function(timezone, AutomCompleteJ) {
+
+        /* B: convert source to string-array format */
+        /* TODO: it should use a unified way to unfold the different object
+        and do the exception handling via lib static method. */
+        var cities = [];
+        for(var propName in timezone) {
+          if (timezone.hasOwnProperty(propName)) {
+            var continent = timezone[propName];
+            for (var idx = 0, len =  continent.length; idx < len; idx++) {
+              cities.push(continent[idx].city);
+            }
+          }
+        }
+        cities.sort();
+        /* E: convert source to string-array format */
+
+        /* B: Setup callback functions */
+        var matchedLength = 0,
+            inputsLength  = 3;
+        function onMatched() {
+          matchedLength++;
+          checkAllMatched();
+        }
+        function onUnMatched() {
+          matchedLength--;
+          checkAllMatched();
+        }
+        function checkAllMatched() {
+          var btn = document.getElementById('btnSubmit');
+          btn.disabled = matchedLength < inputsLength;
+          console.log(matchedLength);
+        }
+        /* E: Setup callback functions */
+
+
+        /* B: Init UI  */
+        new AutomCompleteJ('fromCity', cities, {
+          html5       : true, //init with html5 mode
+          searchAny   : false,
+          onMatched   : onMatched,
+          onUnMatched : onUnMatched
+        });
+
+        new AutomCompleteJ('transitCity', cities, {
+          html5       : false, //init with legacy mode
+          searchAny   : false, //match start
+          onMatched   : onMatched,
+          onUnMatched : onUnMatched
+        });
+
+        new AutomCompleteJ('toCity', cities, {
+          html5       : false, //init with legacy mode
+          searchAny   : true,  //match anywhere
+          onMatched   : onMatched,
+          onUnMatched : onUnMatched
+        });
+        /* E: Init UI  */
+
+      });
+
+    </script>
+
+  </body>
+</html>
+

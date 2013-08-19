@@ -1,0 +1,52 @@
+/*! AutoComleteJ.js
+    This widget provide two ways to build the autocomplete UI.
+      - HTML5, use native <datalist />
+      - Legacy, use <li /> to simulate the auto complete fature.
+
+    * This CSS ia only for the Legacy mode. HTML5 mode is use native UI.
+*/
+@import "compass/css3";
+@import "compass/typography";
+
+$datalist-height: 150px;
+$datalist-background: #fff;
+$datalist-item-color: #cdcdcd;
+
+.autoCompleteJ-wrapper {
+  position: relative;
+
+  @include inline-block(top);
+}
+.autoCompleteJ-datalist {
+  display:none;
+
+  font-size: 12px;
+
+  @include no-bullets;
+  margin : 0; padding: 0;
+
+  position: absolute;
+  top: 100%;
+  left: 0; right: 0;
+  z-index: 110;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+  *overflow: auto;
+
+  width: 100%;
+  height: $datalist-height;
+  background: $datalist-background;
+
+  border: 1px solid $datalist-item-color;
+
+  &.autoCompleteJ-active {
+    display: block;
+  }
+
+  li.autoCompleteJ-active,
+  li:hover {
+    background: $datalist-item-color;
+  }
+}
+

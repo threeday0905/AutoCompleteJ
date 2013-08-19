@@ -1,0 +1,37 @@
+<!doctype HTML>
+<html>
+<head>
+  <title>Overload.js Unit Test</title>
+
+  <link rel="stylesheet" href="vendor/jasmine.css"/>
+  <script src="vendor/jasmine.js"></script>
+  <script src="vendor/jasmine-html.js"></script>
+
+  <!-- include source files here... -->
+  <script src="../src/autoCompleteJ.js"></script>
+
+  <!-- include helper files here... -->
+  <script src="helper/commonHelper.js"></script>
+
+  <!-- include spec files here... -->
+  <script src="spec/autoComleteJ_SPEC.js"></script>
+
+</head>
+
+<body>
+  <script>
+    var jasmineEnv = jasmine.getEnv();
+    var htmlReporter = new jasmine.HtmlReporter();
+
+    jasmineEnv.updateInterval = 10000;
+    jasmineEnv.addReporter(htmlReporter);
+
+    jasmineEnv.specFilter = function(spec) {
+      return htmlReporter.specFilter(spec);
+    };
+
+    jasmineEnv.execute();
+  </script>
+
+</body>
+</html>
