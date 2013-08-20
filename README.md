@@ -1,4 +1,4 @@
-WidgetJ / AutoComplete
+Widget - J / AutoComplete
 =========================
 
 AutoCompleteJ is an UI component to easily create auto-complete boxes for input fields;
@@ -6,16 +6,18 @@ AutoCompleteJ is an UI component to easily create auto-complete boxes for input 
 
 
 This widget proivde two way to build the auto-complete UI.
- - HTML5 Mode, it will convert data source into <datalist> tag, and use native HTML5 autocomplete widget.
+ - HTML5 Mode, it will convert data source into `<datalist>` tag, and use native HTML5 autocomplete widget.
 
- - Native Mode, it will convert data source into <ul> tag, and use javascript to simulate auto-complete widget.
- [it can use option to switch different mode.]
+ - Legacy Mode, it will convert data source into `<ul>` tag, and use javascript to simulate auto-complete widget.
+ 
 
-
+=========================
 The constructor receive three arguments as below:
-  1. dom    -> input id or dom object
-  2. source -> data source (with string-array format)
+  1. dom     -> input id or dom object
+  2. source  -> data source (with string-array format)
   3. options -> the detail description on the next part.
+
+
 
 Initial code like this:
 ```
@@ -30,11 +32,10 @@ new AutomCompleteJ('toCity', [ /* data */ ], {
 
 
 # Options
-===============
 
 `html5`
-  * {true}: use html5 mode if browser support.
-  * {false}: use native mode.
+  * {true}:  use html5 mode if browser support.
+  * {false}: use legacy mode.
   * default: true
 
 `onInit`
@@ -53,7 +54,7 @@ new AutomCompleteJ('toCity', [ /* data */ ], {
   * callback function
   * trigger when key up on input
 
-[above options does not support in HTML5 mode]
+[above options does not support in HTML5 mode]<br/>
 `ignoreCase`
   * {true}:  filter engine will be case-sensitive
   * {false}: filter engine will ignore case.
@@ -64,7 +65,7 @@ new AutomCompleteJ('toCity', [ /* data */ ], {
   * {false}: filter engine will return true if item is start with search text.
   * default: true
 
-'maxEntries'
+`maxEntries`
   * accept format: number
   * how many entries will shown on auto-complete box.
   * default: 1000
@@ -90,12 +91,13 @@ new AutomCompleteJ('toCity', [ /* data */ ], {
 
 
 # Supported Browser
-===============
+
 - All major browser.
 - IE7 and above.
 
+
 # Demo
-===============
+
 http://beerfriday.net/hman/autoCompleteJ/demo/index.html
 
 (The file is same as "demo" folder)
