@@ -37,7 +37,7 @@
       /* 2. also use AMD to load the main lib. the lib is also support CMD, or export to global object. */
       require(
 
-        ['./source/timezone', '../dest/autoCompleteJ' ],
+        ['./source/timezone', '../src/autoCompleteJ' ],
 
         function(timezone, AutomCompleteJ) {
 
@@ -61,16 +61,18 @@
             inputsLength  = 3;
         function onMatched() {
           matchedLength++;
+          console.log('matched!');
           checkAllMatched();
         }
         function onUnMatched() {
           matchedLength--;
+          console.log('on-matched!');
           checkAllMatched();
         }
         function checkAllMatched() {
           var btn = document.getElementById('btnSubmit');
           btn.disabled = matchedLength < inputsLength;
-          console.log(matchedLength);
+          console.log('match:' + matchedLength);
         }
         /* E: Setup callback functions */
 

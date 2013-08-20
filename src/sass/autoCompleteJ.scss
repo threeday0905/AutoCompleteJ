@@ -50,3 +50,6 @@ $datalist-item-color: #cdcdcd;
   }
 }
 
+.autoCompleteJ-opacity {
+  @include opacity(0);
+}

@@ -1,4 +1,4 @@
-/*! AutoComleteJ.js
+/* AutoComleteJ.js
     This widget provide two ways to build the autocomplete UI.
       - HTML5, use native <datalist />
       - Legacy, use <li /> to simulate the auto complete fature.
@@ -45,4 +45,9 @@
 .autoCompleteJ-datalist li.autoCompleteJ-active,
 .autoCompleteJ-datalist li:hover {
   background: #cdcdcd;
+}
+
+.autoCompleteJ-opacity {
+  filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=0);
+  opacity: 0;
 }

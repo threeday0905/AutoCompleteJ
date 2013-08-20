@@ -1,6 +1,6 @@
 /*! AutoCompleteJ 0.1.0
  * Author: Herman Lee <threeday0905@gmail.com>
- * Description: AutoComplete widget, support both html5 / legacy mode
+ * Description: AutoCompleteJ is an UI component to easily create auto-complete boxes for input fields;
  * Date: 2013-08-20 */
 /*
   AutoComleteJ.js
@@ -346,8 +346,9 @@
     onMatched   : false,  //triggered by input text match the source.
     onUnMatched : false,  //if it has been matched, but enter another word then cause un-match.
     onKeyUp     : false,  //triggered by key up
+    onKeyDown   : false,
 
-    /* above options will only work on legacy mode. */
+    /* B: Above options will only work on legacy mode. */
     ignoreCase : true,
 
     // false: check if the string start with search txt.
@@ -364,8 +365,15 @@
       datalist     : 'autoCompleteJ-datalist',
       wrapper      : 'autoCompleteJ-wrapper',
       active       : 'autoCompleteJ-active',
+      opacity      : 'autoCompleteJ-opacity',
       hover        : 'autoCompleteJ-active'
-    }
+    },
+    /* E: Above options will only work on legacy mode. */
+
+    /* TODO: Load auto complete result per AJAX mode*/
+    ajax: false,
+    delay: 2,
+    minLength: 2
   };
 
 
@@ -386,7 +394,7 @@
 
     //init options
     var options = tool.oo.mixin({}, defaultOptions, userOptions);
-    self.options = options;
+    self.options = self.addFlagInOptions(options);
 
     //init and check target input
     self.input = init.makeInputByIdOrSelf(domOrId);
@@ -418,7 +426,17 @@
       Instance Methods
 
   **/
-  AutoCompleteJ.prototype = {};
+  AutoCompleteJ.prototype = {
+    addFlagInOptions: function(options) {
+      var self = this;
+      options = options || self.options;
+
+      if (tool.is.fn(options.onMatched) || tool.is.fn(options.onUnMatched)) {
+        options.listenerNeeded = true;
+      }
+      return options;
+    }
+  };
 
   /**
     ClassName: AutoComleteJ
@@ -524,6 +542,15 @@
         self._lowerCaseSource.indexOf(text.toLowerCase()) > -1 :
         self.source.indexOf(text) > -1;
     },
+    updateSource: function(newSource) {
+      var self = this;
+      self.source = newSource;
+      if(self.options.ignoreCase) {
+        self._lowerCaseSource = self.source.map(function(val) {
+          return val.toLowerCase();
+        });
+      }
+    },
     /* E: Helper functions */
 
     /* B: Control the source */
@@ -538,15 +565,6 @@
       }
       return source;
     },
-    updateSource: function(newSource) {
-      var self = this;
-      self.source = newSource;
-      if(self.options.ignoreCase) {
-        self._lowerCaseSource = self.source.map(function(val) {
-          return val.toLowerCase();
-        });
-      }
-    },
     sliceSource: function(source) {
       var self = this;
       if (!self.options.html5engine && source.length > self.options.maxEntries) {
@@ -554,26 +572,50 @@
       }
       return source;
     },
-    filterSource: function(searchText) {
+    filterSource: function(searchText, source) {
       var self = this;
       var result;
 
       if (self.options.searchAny) {
         if (self.options.ignoreCase) {
-          result = self.source.filter(self.getSearchAnyICFn(searchText));
+          result = source.filter(self.getSearchAnyICFn(searchText));
         } else {
-          result = self.source.filter(self.getSearchAnyFn(searchText));
+          result = source.filter(self.getSearchAnyFn(searchText));
         }
       } else {
         if (self.options.ignoreCase) {
-          result = self.source.filter(self.getSearchStartICFn(searchText));
+          result = source.filter(self.getSearchStartICFn(searchText));
         } else {
-          result = self.source.filter(self.getSearchStartFn(searchText));
+          result = source.filter(self.getSearchStartFn(searchText));
         }
       }
 
+      //cache necessary datas for next filter event
+      self._lastSearchText = searchText;
+      self._lastFilterResult = result;
       return result;
     },
+    getTargetSource: function(searchText) {
+      var self = this;
+
+      var source;
+
+      // if user expand search condition, then use cached result as data source
+      var lastSearchText   = self._lastSearchText,
+          lastFilterResult = self._lastFilterResult;
+
+      if (lastSearchText && lastFilterResult &&
+          searchText.length > lastSearchText.length &&
+          new RegExp('^' + lastSearchText).test(searchText) ) {
+        source = lastFilterResult;
+      } else {
+        source = self.source;
+      }
+
+      return source;
+    },
+    /* E: Control the source */
+
     /* B: Search Methods */
     getSearchAnyFn: function(searchText) {
       return function(val) {
@@ -587,26 +629,27 @@
       };
     },
     getSearchStartFn: function(searchText) {
-      var regex = new RegExp('^' + searchText);
+      var searchTextLength = searchText.length;
       return function(val) {
-        return regex.test(val);
+        return val.substr(0, searchTextLength) === searchText;
       };
     },
     getSearchStartICFn: function(searchText) {
-      var regex = new RegExp('^' + searchText, 'i');
+      var searchTextLength = searchText.length;
+      searchText = searchText.toLowerCase();
       return function(val) {
-        return regex.test(val);
+        return val.toLowerCase().substr(0, searchTextLength) === searchText;
       };
     },
     /* E: Search Methods */
-    /* E: Control the source */
 
     /* B: Control the document element */
     updateContent: function(searchText) {
       var self = this;
       var source = self.source;
       if (searchText) {
-        source = self.filterSource(searchText);
+        source = self.getTargetSource(searchText);
+        source = self.filterSource(searchText, source);
       }
 
       source = self.sliceSource(source);
@@ -731,9 +774,8 @@
     elemEventInit: function() {
       var self = this;
 
-      tool.evt.bind(self.element.input, 'keyup', self.inputOnKeyUp.bind(self));
-      tool.evt.bind(self.element.input, 'focus', self.inputOnFocus.bind(self));
-      tool.evt.bind(self.element.input, 'blur' , self.inputOnBlur.bind(self));
+      tool.evt.bind(self.element.input, 'keyup',  self.inputOnKeyUp.bind(self));
+      tool.evt.bind(self.element.input, 'change', self.inputOnChange.bind(self));
     },
     elemRender: function() {
       var self = this;
@@ -742,27 +784,18 @@
     /* E: UI Init Methods */
 
     /* B: Listen to Match */
-    startLisiting: function() {
+    checkMatch: function() {
       var self = this;
-
-      self._lisitingId = setInterval(function() {
-        var value = self.element.input.value;
-        if (self._lastValue !== value) {
-          if (self.datalist.isItemMatchSource(value)) {
-            if (!self.matched) {
-              self.onMatched();
-            }
-          } else if (self.matched) { // only call un-match method when last-call is matched
-            self.unMatched();
+      var value = self.element.input.value;
+      if (self._lastValue !== value) {
+        if (self.datalist.isItemMatchSource(value)) {
+          if (!self.matched) {
+            self.onMatched();
           }
-          self._lastValue = value;
+        } else if (self.matched) { // only call un-match method when last-call is matched
+          self.onUnMatched();
         }
-      }, 200);
-    },
-    endLisiting: function() {
-      var self = this;
-      if (self._lisitingId) {
-        clearInterval(self._lisitingId);
+        self._lastValue = value;
       }
     },
     onMatched: function() {
@@ -772,7 +805,7 @@
       }
       self.matched = true;
     },
-    unMatched: function() {
+    onUnMatched: function() {
       var self = this;
       if (tool.is.fn(self.options.onUnMatched)) {
         self.options.onUnMatched.call(self.element.input, self.element.input.value);
@@ -782,15 +815,9 @@
     /* E: Listen to Match */
 
     /* B: Element Methods */
-    inputOnFocus: function() {
+    inputOnChange: function() {
       var self = this;
-      self.startLisiting();
-    },
-    inputOnBlur: function() {
-      var self = this;
-      setTimeout(function() {
-        self.endLisiting();
-      }, 250);
+      self.checkMatch();
     },
     inputOnKeyUp: function(evt) {
       var self = this;
@@ -798,6 +825,7 @@
       if (tool.is.fn(self.options.onKeyUp)) {
         self.options.onKeyUp.call(self.element.input, evt.keyCode, self.element.input.value);
       }
+      self.checkMatch();
     }
     /* E: Element Methods */
   };
@@ -882,7 +910,9 @@
       tool.evt.bind(element.input, 'focus'   , self.inputOnFocus.bind(self));
       tool.evt.bind(element.input, 'blur'    , self.inputOnBlur.bind(self));
       tool.evt.bind(element.input, 'keyup'   , self.inputOnKeyUp.bind(self));
+      tool.evt.bind(element.input, 'keydown' , self.inputOnKeyDown.bind(self));
       tool.evt.bind(element.input, 'click'   , self.inputOnClick.bind(self));
+      tool.evt.bind(element.input, 'change'  , self.inputOnChange.bind(self));
       tool.evt.bind(element.datalist, 'click', self.itemOnClick.bind(self));
     },
     elemRender: function() {
@@ -910,27 +940,18 @@
     /* B: UI Init Methods */
 
     /* B: Listen to Match */
-    startLisiting: function() {
+    checkMatch: function() {
       var self = this;
-
-      self._lisitingId = setInterval(function() {
-        var value = self.element.input.value;
-        if (self._lastValue !== value) {
-          if (self.datalist.isItemMatchSource(value)) {
-            if (!self.matched) {
-              self.onMatched();
-            }
-          } else if (self.matched) { // only call un-match method when last-call is matched
-            self.unMatched();
+      var value = self.element.input.value;
+      if (self._lastValue !== value) {
+        if (self.datalist.isItemMatchSource(value)) {
+          if (!self.matched) {
+            self.onMatched();
           }
-          self._lastValue = value;
+        } else if (self.matched) { // only call un-match method when last-call is matched
+          self.onUnMatched();
         }
-      }, 200);
-    },
-    endLisiting: function() {
-      var self = this;
-      if (self._lisitingId) {
-        clearInterval(self._lisitingId);
+        self._lastValue = value;
       }
     },
     onMatched: function() {
@@ -940,7 +961,7 @@
       }
       self.matched = true;
     },
-    unMatched: function() {
+    onUnMatched: function() {
       var self = this;
       if (tool.is.fn(self.options.onUnMatched)) {
         self.options.onUnMatched.call(self.element.input, self.element.input.value);
@@ -966,6 +987,16 @@
       tool.css.remove(element.datalist, self.options.className.active);
       self.listShown = false;
     },
+    listToOpacity: function() {
+      var self = this,
+          element = self.element;
+
+      tool.css.add(element.datalist, self.options.className.opacity);
+      setTimeout(function() {
+        tool.css.remove(element.datalist, self.options.className.opacity);
+        self.listToHide();
+      }, 300);
+    },
     adjustListScroll: function(item) {
       var BAND_WIDTH = 20;
 
@@ -977,12 +1008,20 @@
           listCeiling  = list.scrollTop + BAND_WIDTH,
           listFloor    = list.scrollTop + list.offsetHeight - BAND_WIDTH;
 
-      if (itemPosition > listCeiling) {
-        list.scrollTop += item.offsetHeight;
-      }
+      var nextCeiling, nextFloor;
 
-      if (itemPosition <= listFloor ) {
-        list.scrollTop -= item.offsetHeight;
+      if (itemPosition > listCeiling && itemPosition > listFloor) {
+        nextCeiling = list.scrollTop + item.offsetHeight;
+        if (itemPosition > nextFloor + list.offsetHeight) {
+          nextCeiling = item.offsetTop;
+        }
+        list.scrollTop = nextCeiling;
+      } else if (itemPosition <= listCeiling && itemPosition < listFloor) {
+        nextCeiling = list.scrollTop - item.offsetHeight;
+        if (itemPosition <= nextCeiling) {
+          nextCeiling = item.offsetTop;
+        }
+        list.scrollTop = nextCeiling;
       }
     },
     /* E: DataList Controller */
@@ -994,6 +1033,7 @@
       self.itemToHover(item);
       self.selectedItem = item;
       self.assignValue(item.textContent || item.innerText);
+      self.inputOnChange();
     },
     itemToHover: function(item) {
       var self = this;
@@ -1029,20 +1069,36 @@
         self.inputHasFocus = true;
       }, 200);
 
-      self.startLisiting();
       //self.listToShow();
     },
     inputOnBlur: function() {
       var self = this;
       self.inputHasFocus = false;
-      if (self.listShown) {
-        setTimeout(function() {
-          self.listToHide();
-          self.endLisiting();
-        }, 250);
+      self.listToOpacity();
+    },
+    inputOnChange: function(evt) {
+      var self = this;
+      self.checkMatch();
+    },
+    inputOnKeyDown: function(evt) {
+      var self = this;
+      var keyCode = evt.keyCode;
+      switch(keyCode) {
+      case 9:  // tab
+        self.keyToSelectItem();
+        self.listToHide();
+        break;
+
+      case 27: // esc
+        self.listToHide();
+        break;
+      }
+
+      //callback onKeyUp
+      if (tool.is.fn(self.options.onKeyDown)) {
+        self.options.onKeyDown.call(self.element.input, evt.keyCode, self.element.input.value);
       }
     },
-
     inputOnKeyUp: function(evt) {
       var self = this;
       var keyCode = evt.keyCode;
@@ -1053,6 +1109,14 @@
       }
 
       switch(keyCode) {
+      case 33: // page up
+        self.keyToChoicePrevPage();
+        break;
+
+      case 34: // page down
+        self.keyToChoiceNextPage();
+        break;
+
       case 38: //up arrow
         self.keyToChoicePrevItem();
         break;
@@ -1088,6 +1152,7 @@
       if (tool.is.fn(self.options.onKeyUp)) {
         self.options.onKeyUp.call(self.element.input, evt.keyCode, self.element.input.value);
       }
+      self.checkMatch();
     },
     keyToChoicePrevItem: function() {
       var self = this;
@@ -1102,6 +1167,28 @@
       var self = this;
       if (!self.hoveringItem) {
         self.itemToHover(self.firstItem());
+      } else if (self.hoveringItem.nextSibling) {
+        self.itemToHover(self.hoveringItem.nextSibling);
+      }
+      self.adjustListScroll(self.hoveringItem);
+    },
+    keyToChoicePrevPage: function() {
+      var self = this;
+      if (!self.hoveringItem) {
+        self.itemToHover(self.firstItem());
+
+      // TODO - Move to Prev Page
+      } else if (self.hoveringItem.previousSibling) {
+        self.itemToHover(self.hoveringItem.previousSibling);
+      }
+      self.adjustListScroll(self.hoveringItem);
+    },
+    keyToChoiceNextPage: function() {
+      var self = this;
+      if (!self.hoveringItem) {
+        self.itemToHover(self.firstItem());
+
+      // TODO - Move to Next Page
       } else if (self.hoveringItem.nextSibling) {
         self.itemToHover(self.hoveringItem.nextSibling);
       }
